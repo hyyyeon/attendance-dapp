@@ -1,7 +1,8 @@
 import { BrowserProvider, Contract } from 'ethers'
 
-const attendanceAddress = "0x912aBF8B99d147f1565efe0A7842A099a43C826e"
-const tokenAddress = "0x68F9062a692AF3F0e5924a783590a90851C93F0a"
+const attendanceAddress = "0x7a4030E0ddcdab1014e4E8Ae7393194275Ca0b0A"
+const tokenAddress = "0x7321E1251ABBE7a72803Ea48b4a84069e2101458"
+
 
 import attendanceABI from "./attendanceABI.json"
 import tokenABI from "./tokenABI.json"
