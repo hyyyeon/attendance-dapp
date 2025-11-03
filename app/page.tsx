@@ -1,65 +1,95 @@
-import Image from "next/image";
+// attendance-dapp/app/page.tsx
+
+'use client'
+
+import { useEffect, useState } from 'react'
+import { connectWallet, checkIn, getLastCheck, getAccount } from '@/lib/blockchain'
 
 export default function Home() {
+  const [account, setAccount] = useState<string | null>(null)
+  const [lastCheckTime, setLastCheckTime] = useState<number>(0)
+  const [message, setMessage] = useState<string>('')
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  async function load() {
+    const acc = await getAccount()
+    if (acc) {
+      setAccount(acc)
+      const last = await getLastCheck(acc)
+      setLastCheckTime(Number(last))
+    }
+  }
+
+  async function onConnect() {
+    const acc = await connectWallet()
+    setAccount(acc)
+    const last = await getLastCheck(acc)
+    setLastCheckTime(Number(last))
+  }
+
+  async function onCheckIn() {
+    try {
+      await checkIn()
+      setMessage('출석 완료! 도장 받았습니다')
+      const last = await getLastCheck(account!)
+      setLastCheckTime(Number(last))
+    } catch (e: any) {
+      setMessage(e.message ?? '출석 실패')
+    }
+  }
+
+  const canCheck = Date.now()/1000 - lastCheckTime >= 86400
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-[#F5F8FF] p-6">
+      {/* Title */}
+      <h1 className="text-3xl font-bold mb-2">출석체크</h1>
+      <p className="text-gray-600 mb-8">92313489 윤지현</p>
+
+      {/* Card */}
+      <div className="bg-white shadow-xl rounded-xl p-6 w-full max-w-md border border-blue-200">
+
+        <div className="text-sm text-gray-600 mb-2">지갑 주소</div>
+        <div className="p-3 bg-gray-50 rounded-md border font-mono text-xs break-all mb-4">
+          {account ?? '지갑 연결 필요'}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Stamp Button */}
+        {account ? (
+          <button
+            onClick={onCheckIn}
+            disabled={!canCheck}
+            className={`w-full py-4 rounded-lg text-lg font-bold transition-all ${
+              canCheck
+                ? 'bg-[#4E6EF2] text-white hover:bg-[#3a53c7]'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {canCheck ? '출석 도장 찍기' : '이미 출석했어요'}
+          </button>
+        ) : (
+          <button 
+            onClick={onConnect} 
+            className="w-full py-4 bg-[#4E6EF2] text-white rounded-lg font-bold hover:bg-[#3a53c7]"
           >
-            Documentation
-          </a>
+            지갑 연결하기
+          </button>
+        )}
+
+        {/* Last check */}
+        <div className="mt-4 text-sm text-gray-600">
+          마지막 출석: {lastCheckTime === 0 ? '기록 없음' : new Date(lastCheckTime*1000).toLocaleString()}
         </div>
-      </main>
-    </div>
-  );
+
+        {message && (
+          <div className="mt-4 p-3 bg-purple-100 border border-purple-300 text-purple-700 rounded-md text-sm">
+            {message}
+          </div>
+        )}
+      </div>
+    </main>
+  )
 }
